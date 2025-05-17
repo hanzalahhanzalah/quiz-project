@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Quiz</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin-top: 50px;
+    }
+    input, select {
+      padding: 10px;
+      margin: 10px;
+      width: 200px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #options label {
+      display: block;
+      margin: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Student Quiz</h2>
+
+  <form id="studentForm">
+    <input type="text" id="name" placeholder="Enter your name" required><br>
+    <select id="subject" required>
+      <option value="">--Select Subject--</option>
+      <option value="Physics">Physics</option>
+      <option value="Math">Math</option>
+    </select><br>
+    <button type="submit">Start Quiz</button>
+  </form>
+
+  <div id="quizBox" style="display:none;">
+    <p id="questionText"></p>
+    <div id="options"></div>
+    <button id="nextBtn">Next</button>
+  </div>
+
+  <div id="resultBox" style="display:none;">
+    <h3 id="scoreText"></h3>
+    <p id="responseMsg"></p>
+    <button onclick="location.reload()">Restart</button>
+  </div>
+
+  <script>
+    const physicsQuestions = [
+      { q: "What is the unit of force?", options: ["Newton", "Joule", "Pascal", "Watt"], answer: "Newton" },
+      { q: "Speed = ?", options: ["Distance/Time", "Time*Distance", "Mass/Volume", "Force*Time"], answer: "Distance/Time" },
+      { q: "Acceleration due to gravity?", options: ["9.8 m/s²", "10 N", "9.8 N", "0 m/s"], answer: "9.8 m/s²" },
+      { q: "Light travels fastest in?", options: ["Air", "Water", "Glass", "Vacuum"], answer: "Vacuum" },
+      { q: "Work = ?", options: ["Force*Distance", "Mass*Velocity", "Power/Time", "Speed*Time"], answer: "Force*Distance" }
+    ];
+
+    const mathQuestions = [
+      { q: "2 + 2 = ?", options: ["4", "3", "2", "5"], answer: "4" },
+      { q: "Square root of 25?", options: ["3", "5", "7", "6"], answer: "5" },
+      { q: "10/2 = ?", options: ["2", "4", "5", "10"], answer: "5" },
+      { q: "5² = ?", options: ["10", "15", "20", "25"], answer: "25" },
+      { q: "15 + 10 = ?", options: ["20", "25", "30", "35"], answer: "25" }
+    ];
+
+    let selectedSubject = "";
+    let questions = [];
+    let current = 0;
+    let score = 0;
+    let userName = "";
+
+    document.getElementById("studentForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      userName = document.getElementById("name").value;
+      selectedSubject = document.getElementById("subject").value;
+      questions = selectedSubject === "Physics" ? physicsQuestions : mathQuestions;
+      document.getElementById("studentForm").style.display = "none";
+      document.getElementById("quizBox").style.display = "block";
+      loadQuestion();
+    });
+
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      const selectedOption = document.querySelector('input[name="option"]:checked');
+      if (!selectedOption) return alert("Please select an option");
+      const answer = selectedOption.value;
+      if (answer === questions[current].answer) score++;
+
+      current++;
+      if (current < questions.length) {
+        loadQuestion();
+      } else {
+        showResult();
+      }
+    });
+
+    function loadQuestion() {
+      const q = questions[current];
+      document.getElementById("questionText").innerText = `Q${current + 1}: ${q.q}`;
+      document.getElementById("options").innerHTML = q.options.map(opt => `
+        <label><input type="radio" name="option" value="${opt}"> ${opt}</label>
+      `).join('');
+    }
+
+    function showResult() {
+      document.getElementById("quizBox").style.display = "none";
+      document.getElementById("resultBox").style.display = "block";
+      document.getElementById("scoreText").innerText = `${userName}, your score is ${score}/${questions.length}`;
+
+      // Send result to Google Sheets
+      fetch("https://script.google.com/macros/s/AKfycbx1MOMMAor4agNEW39wd3Ij9arH9yLKW5nSizIBH-_NPrAUcXIDC4v4Dycr8CrJBExrSQ/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: userName,
+          subject: selectedSubject,
+          score: `${score}/${questions.length}`
+        })
+      });
+
+      document.getElementById("responseMsg").innerText = "Result submitted (Thank you for attempting the test)";
+    }
+  </script>
+
+</body>
+</html>
